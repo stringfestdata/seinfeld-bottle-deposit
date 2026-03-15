@@ -275,7 +275,7 @@
         </div>
         <div class="math-step" style="margin-top:2px;">
           <span class="math-label">Can revenue</span>
-          <span id="math-can-eq" style="color:#1a1208;">300 cans x $0.05 per can</span>
+          <span id="math-can-eq" style="color:#1a1208;">300 cans x $0.10 per can</span>
           <span style="color:#7a6a4a;">=</span>
           <span class="mpos" id="math-can-result">+$15.00</span>
         </div>
@@ -324,7 +324,7 @@
   <!-- NOTES -->
   <div class="paper notes-paper">
     <div class="notes-head">Context</div>
-    <p><strong>Why Michigan?</strong> Michigan's Bottle Bill (1976) returns 10 cents per can. New York pays 5 cents. Net gain: 5 cents per can. Sounds easy until you pay for gas.</p>
+    <p><strong>Why Michigan?</strong> Michigan's Bottle Bill (1976) returns 10 cents per can -- the highest in the US and double New York's 5 cent deposit. Every can you haul there is worth a dime. Sounds easy until you pay for gas.</p>
     <p><strong>Newman's secret edge:</strong> His USPS mail route already ran to Saginaw. The government paid his gas. His break-even was literally zero cans, which is why Kramer called it "practically free money." He was right, but only about Newman's situation -- not a normal person's.</p>
     <p><strong>Jon Voight's* LeBaron:</strong> Appears in Season 3, Episode 2. It's a wood-paneled Town and Country-style convertible -- one of the more outrageous props in the show's history. Kramer buys it convinced celebrity provenance adds value. A bite mark later complicates things. (*Voight, not Voight.)</p>
     <p><strong>Newman's mail truck:</strong> The big USPS step-van, not the small LLV. Tall, boxy, underpowered, and fueled entirely by government contracts and spite. Newman drove it across state lines stuffed with garbage bags full of cans.</p>
@@ -340,7 +340,7 @@ const CARS = {
   lebaron:   { mpg: 22, capacity: 800,  name: 'LeBaron Convertible' },
   mailtruck: { mpg: 10, capacity: 5000, name: "Newman's LLV" },
 };
-const BASE_MI = 620, GAIN = 0.05;
+const BASE_MI = 620, GAIN = 0.10;
 
 const Q = {
   profit: {
@@ -391,7 +391,7 @@ function calc() {
 
   $('math-gas-eq').textContent  = commas(miles) + ' mi / ' + c.mpg + ' MPG x $' + gasPrice.toFixed(2) + '/gal';
   $('math-gas-result').textContent = '-$' + gasCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  $('math-can-eq').textContent  = commas(cans) + ' cans x $0.05 per can';
+  $('math-can-eq').textContent  = commas(cans) + ' cans x $0.10 per can';
   $('math-can-result').textContent = '+$' + revenue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   $('math-net').textContent = fmt(net);
   $('math-net').className = net >= 0 ? 'mpos' : 'mneg';

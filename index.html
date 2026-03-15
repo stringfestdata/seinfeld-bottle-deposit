@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Seinfeld Bottle Deposit Simulator</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="scanlines"></div>
+    <main class="app-shell">
+      <header class="hero">
+        <p class="kicker">SERENITY NOW TRANSPORT CO.</p>
+        <h1>Michigan Deposit Run Simulator</h1>
+        <p>
+          Figure out when a road trip to Saginaw would actually make money with the
+          famous <strong>10¢ Michigan deposit</strong>.
+        </p>
+      </header>
+
+      <section class="panel controls">
+        <h2>Trip Setup</h2>
+
+        <div class="field-grid">
+          <label>
+            Number of returnables
+            <input id="containerCount" type="number" min="0" value="250" />
+          </label>
+
+          <label>
+            Average miles per gallon
+            <input id="mpg" type="number" min="1" step="0.1" value="22" />
+          </label>
+
+          <label>
+            Gas price (per gallon)
+            <input id="gasPrice" type="number" min="0" step="0.01" value="3.65" />
+          </label>
+
+          <label>
+            One-way miles to Saginaw sorting facility
+            <input id="distance" type="number" min="0" value="320" />
+          </label>
+
+          <label>
+            Car from the Seinfeld universe
+            <select id="carSelect">
+              <option value="saab">Jerry's SAAB 900</option>
+              <option value="lebaron">Jon Voight's LeBaron</option>
+              <option value="mailtruck">Newman's Mail Truck</option>
+              <option value="rental">Questionable Rental Car</option>
+            </select>
+          </label>
+
+          <label>
+            Tolls + snacks budget
+            <input id="extras" type="number" min="0" step="0.01" value="18" />
+          </label>
+        </div>
+      </section>
+
+      <section class="panel result">
+        <h2>The Math (No Soup for Guesswork)</h2>
+        <div class="stats">
+          <article>
+            <h3>Deposit Collected</h3>
+            <p id="depositValue">$0.00</p>
+          </article>
+          <article>
+            <h3>Trip Cost</h3>
+            <p id="tripCost">$0.00</p>
+          </article>
+          <article>
+            <h3>Net Result</h3>
+            <p id="netResult">$0.00</p>
+          </article>
+        </div>
+
+        <p id="verdict" class="verdict">Crunching numbers...</p>
+
+        <div class="progress-wrap" aria-hidden="true">
+          <div id="profitBar" class="profit-bar"></div>
+        </div>
+      </section>
+
+      <section class="panel car-note">
+        <h2>Vehicle Flavor Text</h2>
+        <p id="carBlurb"></p>
+      </section>
+    </main>
+
+    <script src="script.js"></script>
+  </body>
+</html>

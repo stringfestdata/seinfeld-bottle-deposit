@@ -1,94 +1,592 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Seinfeld Bottle Deposit Simulator</title>
-    <link rel="stylesheet" href="styles.css" />
-  </head>
-  <body>
-    <div class="scanlines"></div>
-    <main class="app-shell">
-      <header class="hero">
-        <p class="kicker">SERENITY NOW TRANSPORT CO.</p>
-        <h1>Michigan Deposit Run Simulator</h1>
-        <p>
-          Figure out when a road trip to Saginaw would actually make money with the
-          famous <strong>10¢ Michigan deposit</strong>.
-        </p>
-      </header>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The Bottle Deposit — Kramer's Michigan Scheme</title>
+  <link href="https://fonts.googleapis.com/css2?family=Abril+Fatface&family=Special+Elite&family=Caveat:wght@400;700&family=Courier+Prime:wght@400;700&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
 
-      <section class="panel controls">
-        <h2>Trip Setup</h2>
+    body {
+      background-color: #7a5c2e;
+      background-image:
+        radial-gradient(ellipse at 15% 25%, rgba(110,78,28,0.5) 0%, transparent 55%),
+        radial-gradient(ellipse at 85% 75%, rgba(80,54,18,0.4) 0%, transparent 50%),
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='6' height='6'%3E%3Crect width='6' height='6' fill='%237a5c2e'/%3E%3Ccircle cx='1' cy='1' r='0.8' fill='rgba(0,0,0,0.07)'/%3E%3Ccircle cx='4' cy='4' r='0.8' fill='rgba(255,255,255,0.03)'/%3E%3C/svg%3E");
+      min-height: 100vh;
+      padding: 20px 10px 44px;
+      font-family: 'Special Elite', cursive;
+    }
 
-        <div class="field-grid">
-          <label>
-            Number of returnables
-            <input id="containerCount" type="number" min="0" value="250" />
-          </label>
+    .board { max-width: 980px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
 
-          <label>
-            Average miles per gallon
-            <input id="mpg" type="number" min="1" step="0.1" value="22" />
-          </label>
+    /* Pinned paper base */
+    .paper {
+      position: relative;
+      background: #faf3e0;
+      border: 1px solid #d4c09a;
+      border-radius: 1px;
+    }
+    .paper::before {
+      content: '';
+      position: absolute;
+      top: -8px; left: 50%;
+      transform: translateX(-50%);
+      width: 17px; height: 17px;
+      background: radial-gradient(circle at 35% 35%, #ffe070, #c48a00);
+      border-radius: 50%;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.6), inset 0 -1px 2px rgba(0,0,0,0.25);
+      z-index: 10;
+    }
 
-          <label>
-            Gas price (per gallon)
-            <input id="gasPrice" type="number" min="0" step="0.01" value="3.65" />
-          </label>
+    /* TITLE */
+    .title-card {
+      text-align: center; padding: 18px 24px 14px;
+      box-shadow: 5px 5px 0 #2a1a00, 7px 7px 28px rgba(0,0,0,0.55);
+      transform: rotate(-0.3deg);
+    }
+    .thick-rule { border: none; border-top: 4px double #1a1208; margin: 6px 0; }
+    .show-name { font-family: 'Abril Fatface', serif; font-size: clamp(2.6rem, 8vw, 5rem); color: #1a1208; line-height: 1; letter-spacing: -2px; }
+    .ep-title { font-family: 'Playfair Display', serif; font-weight: 900; font-size: clamp(0.85rem, 2.2vw, 1.25rem); color: #c41230; letter-spacing: 4px; text-transform: uppercase; margin-top: 3px; }
+    .ep-sub { font-size: 0.8rem; color: #7a6a4a; margin-top: 4px; }
 
-          <label>
-            One-way miles to Saginaw sorting facility
-            <input id="distance" type="number" min="0" value="320" />
-          </label>
+    /* TICKER */
+    .ticker { background: #c41230; overflow: hidden; padding: 6px 0; position: relative; }
+    .ticker-badge { position: absolute; left: 0; top: 0; bottom: 0; background: #1a1208; color: #f5c518; font-family: 'Courier Prime', monospace; font-weight: 700; font-size: 0.72rem; letter-spacing: 1px; padding: 0 10px; display: flex; align-items: center; z-index: 2; }
+    .ticker-scroll { padding-left: 110px; overflow: hidden; }
+    .ticker-text { display: inline-block; animation: scrollticker 30s linear infinite; color: #fff; font-family: 'Courier Prime', monospace; font-weight: 700; font-size: 0.8rem; white-space: nowrap; }
+    @keyframes scrollticker { from { transform: translateX(100vw); } to { transform: translateX(-100%); } }
 
-          <label>
-            Car from the Seinfeld universe
-            <select id="carSelect">
-              <option value="saab">Jerry's SAAB 900</option>
-              <option value="lebaron">Jon Voight's LeBaron</option>
-              <option value="mailtruck">Newman's Mail Truck</option>
-              <option value="rental">Questionable Rental Car</option>
-            </select>
-          </label>
+    /* VEHICLES */
+    .vehicles-paper { box-shadow: 4px 4px 0 #2a1a00, 6px 6px 22px rgba(0,0,0,0.45); transform: rotate(0.4deg); padding: 0; overflow: hidden; }
+    .section-band { background: #1a1208; color: #f5c518; font-family: 'Playfair Display', serif; font-weight: 700; font-size: 0.85rem; letter-spacing: 2px; text-transform: uppercase; padding: 8px 18px; }
+    .vehicles-grid { display: grid; grid-template-columns: repeat(3, 1fr); border-top: 2px solid #d4c09a; }
+    @media (max-width: 560px) { .vehicles-grid { grid-template-columns: 1fr; } }
 
-          <label>
-            Tolls + snacks budget
-            <input id="extras" type="number" min="0" step="0.01" value="18" />
-          </label>
+    .vcard { padding: 16px 14px 14px; border-right: 1px solid #d4c09a; cursor: pointer; transition: background 0.2s; position: relative; }
+    .vcard:last-child { border-right: none; }
+    .vcard:hover { background: #f5edd8; }
+    .vcard.selected { background: #fffbe8; outline: 3px solid #c41230; outline-offset: -3px; }
+    .vcard.selected::after { content: '▶ SELECTED'; position: absolute; top: 8px; right: 10px; font-family: 'Courier Prime', monospace; font-weight: 700; font-size: 0.58rem; color: #c41230; letter-spacing: 1px; }
+
+    .car-svg-wrap { width: 100%; aspect-ratio: 2.4/1; display: flex; align-items: center; justify-content: center; margin-bottom: 10px; }
+    .car-svg-wrap svg { width: 100%; height: 100%; }
+
+    .vcard-name { font-family: 'Playfair Display', serif; font-weight: 700; font-size: 0.95rem; color: #1a1208; margin-bottom: 2px; }
+    .vcard-owner { font-family: 'Caveat', cursive; font-size: 0.88rem; color: #8a6a3a; margin-bottom: 8px; }
+    .vcard-stats { font-family: 'Courier Prime', monospace; font-size: 0.75rem; color: #5a4a2a; background: rgba(0,0,0,0.04); border: 1px dashed #c4b080; padding: 5px 8px; }
+    .vcard-stats div { margin-bottom: 1px; }
+    .vcard-stats b { color: #1a1208; }
+
+    /* CONTROLS - lined notepad */
+    .controls-paper {
+      box-shadow: 4px 4px 0 #2a1a00, 6px 6px 22px rgba(0,0,0,0.45);
+      transform: rotate(-0.5deg); overflow: hidden;
+      background: #fefef0;
+      background-image: repeating-linear-gradient(transparent 0px, transparent 28px, #bcd4f8 28px, #bcd4f8 29px);
+      background-position: 0 36px;
+    }
+    .controls-inner { border-left: 3px solid #f08080; margin-left: 28px; padding: 16px 18px 18px; }
+    .controls-row { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+    @media (max-width: 520px) { .controls-row { grid-template-columns: 1fr; } }
+
+    .ctrl-label { font-family: 'Caveat', cursive; font-weight: 700; font-size: 1.05rem; color: #3a2a0a; display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
+    .ctrl-val { font-family: 'Courier Prime', monospace; font-size: 1.3rem; color: #c41230; font-weight: 700; }
+
+    .can-vis { display: flex; flex-wrap: wrap; gap: 1px; max-height: 52px; overflow: hidden; margin: 4px 0 7px; font-size: 1rem; line-height: 1.1; }
+    .can-overflow { font-family: 'Courier Prime', monospace; font-size: 0.68rem; color: #8a6a3a; align-self: flex-end; padding-left: 4px; }
+
+    input[type=range] { width: 100%; accent-color: #c41230; cursor: pointer; }
+    .range-limits { display: flex; justify-content: space-between; font-family: 'Courier Prime', monospace; font-size: 0.7rem; color: #8a7a5a; }
+
+    .gas-input { background: transparent; border: none; border-bottom: 2px solid #1a1208; font-family: 'Courier Prime', monospace; font-size: 1.3rem; font-weight: 700; color: #1a1208; width: 80px; outline: none; padding: 2px 4px; }
+
+    .trip-toggle { display: flex; gap: 8px; margin-top: 8px; }
+    .trip-btn { flex: 1; padding: 7px 6px; background: transparent; border: 1px solid #a09070; font-family: 'Caveat', cursive; font-size: 0.9rem; color: #5a4a2a; cursor: pointer; transition: all 0.15s; line-height: 1.3; }
+    .trip-btn.active { background: #1a1208; color: #faf3e0; border-color: #1a1208; }
+
+    /* RESULT - yellow legal pad */
+    .result-paper {
+      box-shadow: 5px 5px 0 #2a1a00, 7px 7px 26px rgba(0,0,0,0.5);
+      transform: rotate(0.2deg); overflow: hidden;
+      background: #ffffc0;
+      background-image: repeating-linear-gradient(transparent 0px, transparent 28px, #c8d890 28px, #c8d890 29px);
+      background-position: 0 40px;
+      border-left: 4px solid #e0a800;
+    }
+    .result-inner { border-left: 3px solid #f08080; margin-left: 28px; padding: 16px 20px 20px; }
+
+    .math-steps { font-family: 'Courier Prime', monospace; font-size: 0.85rem; color: #3a2a0a; background: rgba(255,255,255,0.5); border: 1px solid rgba(0,0,0,0.1); padding: 12px 14px; margin-bottom: 14px; line-height: 2; }
+    .math-step { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+    .math-label { color: #7a6a4a; font-size: 0.78rem; min-width: 90px; }
+    .math-divider { border: none; border-top: 2px solid #1a1208; margin: 8px 0 6px; }
+    .mpos { color: #1a6a1a; font-weight: 700; }
+    .mneg { color: #c41230; font-weight: 700; }
+
+    .net-box { padding: 14px 18px; margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; border-left: 7px solid; transition: all 0.4s; }
+    .profit { background: rgba(0,100,0,0.09); border-left-color: #1a6a1a; }
+    .loss   { background: rgba(180,0,0,0.08); border-left-color: #c41230; }
+    .even   { background: rgba(30,58,95,0.08); border-left-color: #1e3a5f; }
+    .net-num { font-family: 'Courier Prime', monospace; font-size: clamp(2rem, 6vw, 3rem); font-weight: 700; line-height: 1; }
+    .profit .net-num { color: #1a6a1a; }
+    .loss   .net-num { color: #c41230; }
+    .even   .net-num { color: #1e3a5f; }
+    .net-verdict { font-family: 'Playfair Display', serif; font-weight: 700; text-transform: uppercase; font-size: 0.82rem; letter-spacing: 1.5px; margin-top: 4px; color: #3a2a0a; }
+    .net-plain { font-family: 'Caveat', cursive; font-size: 0.95rem; color: #3a2a0a; max-width: 300px; text-align: right; line-height: 1.5; }
+
+    .be-explain { font-family: 'Caveat', cursive; font-size: 1rem; color: #3a2a0a; margin-bottom: 8px; line-height: 1.5; }
+    .be-explain strong { color: #c41230; }
+    .be-explain.ok strong { color: #1a6a1a; }
+    .be-bar-labels { display: flex; justify-content: space-between; font-family: 'Courier Prime', monospace; font-size: 0.7rem; color: #5a4a2a; margin-bottom: 3px; }
+    .be-track { height: 20px; background: rgba(0,0,0,0.1); border: 1px solid rgba(0,0,0,0.15); overflow: hidden; position: relative; }
+    .be-fill { height: 100%; transition: width 0.4s ease, background 0.4s; }
+    .be-fill.win { background: repeating-linear-gradient(45deg, #1a6a1a 0,#1a6a1a 6px,#2a8a2a 6px,#2a8a2a 12px); }
+    .be-fill.lose { background: repeating-linear-gradient(45deg, #c41230 0,#c41230 6px,#d42240 6px,#d42240 12px); }
+    .be-tick { position: absolute; top: 0; bottom: 0; width: 2px; background: #1a1208; opacity: 0.35; transition: left 0.4s; }
+
+    /* CHARACTER REACTIONS */
+    .postits-paper { box-shadow: 4px 4px 0 #2a1a00, 6px 6px 22px rgba(0,0,0,0.45); transform: rotate(-0.4deg); overflow: hidden; padding: 0; }
+    .postits-grid { display: grid; grid-template-columns: repeat(4,1fr); }
+    @media (max-width: 560px) { .postits-grid { grid-template-columns: 1fr 1fr; } }
+    .postit { padding: 14px 12px 12px; min-height: 90px; font-family: 'Caveat', cursive; font-size: 0.95rem; line-height: 1.4; color: #1a1208; border-right: 1px solid rgba(0,0,0,0.1); }
+    .postit:last-child { border-right: none; }
+    .postit-who { font-family: 'Courier Prime', monospace; font-weight: 700; font-size: 0.6rem; text-transform: uppercase; letter-spacing: 1px; opacity: 0.5; margin-bottom: 5px; }
+    .py { background: #fff9a0; } .pb { background: #bcdff8; } .pp { background: #f8c0c8; } .pg { background: #b8f0c0; }
+
+    /* NOTES */
+    .notes-paper { background: #f5edd8; border: 1px solid #c8b08a; box-shadow: 4px 4px 0 #2a1a00, 6px 6px 22px rgba(0,0,0,0.4); transform: rotate(-0.5deg); padding: 14px 20px 16px; columns: 2; column-gap: 22px; }
+    @media (max-width: 520px) { .notes-paper { columns: 1; } }
+    .notes-head { font-family: 'Playfair Display', serif; font-weight: 900; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1.5px; border-bottom: 2px solid #1a1208; padding-bottom: 5px; margin-bottom: 9px; column-span: all; }
+    .notes-paper p { font-size: 0.79rem; color: #3a2a0a; margin-bottom: 7px; line-height: 1.5; break-inside: avoid; }
+
+    .footer { text-align: center; padding: 10px; font-size: 0.72rem; color: #a08060; }
+  </style>
+</head>
+<body>
+<div class="board">
+
+  <!-- TITLE -->
+  <div class="paper title-card">
+    <hr class="thick-rule"/>
+    <div class="show-name">SEINFELD</div>
+    <div class="ep-title">✦ The Bottle Deposit ✦</div>
+    <div class="ep-sub">Season 7, Episodes 21–22 &nbsp;·&nbsp; "It's practically free money, Jerry." — Cosmo Kramer</div>
+    <hr class="thick-rule"/>
+  </div>
+
+  <!-- TICKER -->
+  <div class="ticker">
+    <div class="ticker-badge">⚡ LIVE</div>
+    <div class="ticker-scroll"><span class="ticker-text" id="ticker">Loading...</span></div>
+  </div>
+
+  <!-- VEHICLES -->
+  <div class="paper vehicles-paper">
+    <div class="section-band">Step 1 — Choose Your Vehicle</div>
+    <div class="vehicles-grid" id="cars-grid">
+
+      <!-- SAAB 900 Turbo -->
+      <div class="vcard selected" data-car="saab">
+        <div class="car-svg-wrap">
+          <svg viewBox="0 0 220 95" xmlns="http://www.w3.org/2000/svg">
+            <ellipse cx="110" cy="92" rx="88" ry="5" fill="rgba(0,0,0,0.15)"/>
+            <!-- Wheels -->
+            <circle cx="55" cy="74" r="17" fill="#1a1a1a"/><circle cx="55" cy="74" r="10" fill="#555"/><circle cx="55" cy="74" r="5" fill="#888"/><circle cx="55" cy="74" r="2" fill="#1a1a1a"/>
+            <circle cx="162" cy="74" r="17" fill="#1a1a1a"/><circle cx="162" cy="74" r="10" fill="#555"/><circle cx="162" cy="74" r="5" fill="#888"/><circle cx="162" cy="74" r="2" fill="#1a1a1a"/>
+            <!-- Body: low, sleek European sports coupe -->
+            <path d="M 13 68 L 13 57 Q 17 44 34 40 Q 50 36 70 35 Q 86 34 100 36 Q 114 34 134 38 Q 158 43 169 57 L 175 63 L 175 68 Z" fill="#f2f2f0" stroke="#c8c8c8" stroke-width="1.5"/>
+            <!-- Hood character line — SAAB's distinctive sloped nose -->
+            <path d="M 13 57 Q 19 49 34 45 Q 50 42 70 41 Q 84 41 97 42" stroke="#dcdcda" stroke-width="2" fill="none"/>
+            <!-- Windshield — raked, open convertible, just the glass -->
+            <path d="M 72 35 Q 76 21 94 17 Q 110 15 118 24 Q 123 30 120 36 L 100 36 Q 86 35 72 35 Z" fill="#b8d4f0" stroke="#90b0ce" stroke-width="1.2" opacity="0.9"/>
+            <!-- Open cockpit interior -->
+            <path d="M 72 35 L 72 55 Q 96 58 120 55 L 120 36 Z" fill="#c8b484"/>
+            <!-- Dashboard -->
+            <path d="M 72 51 Q 96 54 120 51" stroke="#9a7a4a" stroke-width="1.8" fill="none"/>
+            <!-- Steering wheel -->
+            <circle cx="87" cy="45" r="7" fill="none" stroke="#4a3a1a" stroke-width="2"/>
+            <line x1="87" y1="38" x2="87" y2="41" stroke="#4a3a1a" stroke-width="1.5"/>
+            <line x1="87" y1="49" x2="87" y2="52" stroke="#4a3a1a" stroke-width="1.5"/>
+            <line x1="80" y1="45" x2="83" y2="45" stroke="#4a3a1a" stroke-width="1.5"/>
+            <!-- Door line -->
+            <line x1="98" y1="36" x2="100" y2="68" stroke="#c8c8c8" stroke-width="1.2"/>
+            <!-- SAAB badge on trunk lid -->
+            <circle cx="147" cy="44" r="6" fill="#f0f0ee" stroke="#c8c8c8" stroke-width="1"/>
+            <text x="147" y="47.5" font-family="Arial" font-size="4.5" font-weight="bold" fill="#666" text-anchor="middle">SAAB</text>
+            <!-- Headlight (clear wrap-around) -->
+            <path d="M 165 54 Q 170 52 173 55 L 173 62 Q 170 65 165 64 Z" fill="#fff9c0" stroke="#c8c060" stroke-width="0.8"/>
+            <!-- Taillight -->
+            <rect x="11" y="53" width="6" height="12" rx="1.5" fill="#e02020" stroke="#b01010" stroke-width="0.8"/>
+            <!-- Front bumper -->
+            <path d="M 169 64 Q 174 66 175 68" stroke="#c0c0c0" stroke-width="3" fill="none" stroke-linecap="round"/>
+            <!-- Rear bumper -->
+            <path d="M 9 64 Q 9 68 13 68" stroke="#c0c0c0" stroke-width="3" fill="none" stroke-linecap="round"/>
+          </svg>
         </div>
-      </section>
-
-      <section class="panel result">
-        <h2>The Math (No Soup for Guesswork)</h2>
-        <div class="stats">
-          <article>
-            <h3>Deposit Collected</h3>
-            <p id="depositValue">$0.00</p>
-          </article>
-          <article>
-            <h3>Trip Cost</h3>
-            <p id="tripCost">$0.00</p>
-          </article>
-          <article>
-            <h3>Net Result</h3>
-            <p id="netResult">$0.00</p>
-          </article>
+        <div class="vcard-name">SAAB 900 Turbo</div>
+        <div class="vcard-owner">Jerry Seinfeld's wheels</div>
+        <div class="vcard-stats">
+          <div>⛽ <b>26 MPG</b> highway</div>
+          <div>📦 <b>~600 cans</b> capacity</div>
+          <div>🔧 18-gallon tank</div>
         </div>
+      </div>
 
-        <p id="verdict" class="verdict">Crunching numbers...</p>
-
-        <div class="progress-wrap" aria-hidden="true">
-          <div id="profitBar" class="profit-bar"></div>
+      <!-- CHRYSLER LEBARON -->
+      <div class="vcard" data-car="lebaron">
+        <div class="car-svg-wrap">
+          <svg viewBox="0 0 220 95" xmlns="http://www.w3.org/2000/svg">
+            <ellipse cx="110" cy="92" rx="88" ry="5" fill="rgba(0,0,0,0.15)"/>
+            <!-- Wheels — wider stance, more American -->
+            <circle cx="52" cy="74" r="17" fill="#1a1a1a"/><circle cx="52" cy="74" r="10" fill="#555"/><circle cx="52" cy="74" r="5" fill="#888"/><circle cx="52" cy="74" r="2" fill="#1a1a1a"/>
+            <circle cx="166" cy="74" r="17" fill="#1a1a1a"/><circle cx="166" cy="74" r="10" fill="#555"/><circle cx="166" cy="74" r="5" fill="#888"/><circle cx="166" cy="74" r="2" fill="#1a1a1a"/>
+            <!-- Body: longer hood, more American/boxy than SAAB -->
+            <path d="M 10 68 L 10 57 Q 13 47 26 44 Q 40 40 60 39 Q 76 38 92 40 Q 108 38 132 41 Q 160 45 175 58 L 183 64 L 183 68 Z" fill="#f5f0e8" stroke="#c8c0b0" stroke-width="1.5"/>
+            <!-- Long flat American hood -->
+            <path d="M 10 57 Q 16 51 28 48 Q 42 45 60 44 Q 76 43 92 44" stroke="#e0d8c8" stroke-width="2" fill="none"/>
+            <!-- Windshield — more upright (80s American) -->
+            <path d="M 92 40 Q 95 24 112 20 Q 128 18 134 27 Q 138 33 135 41 L 108 40 Q 100 40 92 40 Z" fill="#b8d4f0" stroke="#90b0ce" stroke-width="1.2" opacity="0.9"/>
+            <!-- Open cockpit -->
+            <path d="M 92 40 L 92 58 Q 114 61 135 58 L 135 41 Z" fill="#c8b484"/>
+            <!-- Dashboard -->
+            <path d="M 92 54 Q 114 57 135 54" stroke="#9a7a4a" stroke-width="1.8" fill="none"/>
+            <!-- Steering wheel -->
+            <circle cx="107" cy="47" r="7" fill="none" stroke="#4a3a1a" stroke-width="2"/>
+            <line x1="107" y1="40" x2="107" y2="43" stroke="#4a3a1a" stroke-width="1.5"/>
+            <line x1="107" y1="51" x2="107" y2="54" stroke="#4a3a1a" stroke-width="1.5"/>
+            <line x1="100" y1="47" x2="103" y2="47" stroke="#4a3a1a" stroke-width="1.5"/>
+            <!-- Two door lines (longer car) -->
+            <line x1="112" y1="40" x2="114" y2="68" stroke="#d0c8b8" stroke-width="1.2"/>
+            <line x1="130" y1="41" x2="131" y2="68" stroke="#d0c8b8" stroke-width="1.2"/>
+            <!-- 80s chrome side body moulding -->
+            <path d="M 10 61 L 183 61" stroke="#d8d0b8" stroke-width="2" opacity="0.7"/>
+            <!-- LeBaron script badge -->
+            <rect x="148" y="41" width="22" height="10" rx="2" fill="#f0e8d8" stroke="#c8c0b0" stroke-width="0.8"/>
+            <text x="159" y="49" font-family="Georgia,serif" font-size="5" font-style="italic" fill="#555" text-anchor="middle">LeBaron</text>
+            <!-- Headlight — rectangular, 80s American style -->
+            <rect x="173" y="52" width="12" height="9" rx="1" fill="#fff9c0" stroke="#c8c060" stroke-width="0.8"/>
+            <line x1="175" y1="56.5" x2="183" y2="56.5" stroke="#e0c840" stroke-width="1.5"/>
+            <!-- Heavy chrome front bumper -->
+            <path d="M 176 63 Q 183 66 183 68" stroke="#c0c0b8" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+            <!-- Taillight -->
+            <rect x="8" y="52" width="7" height="14" rx="1.5" fill="#e02020" stroke="#b01010" stroke-width="0.8"/>
+            <!-- Chrome rear bumper -->
+            <path d="M 8 67 Q 8 68 10 68" stroke="#c0c0b8" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+          </svg>
         </div>
-      </section>
+        <div class="vcard-name">Chrysler LeBaron</div>
+        <div class="vcard-owner">Jon Voight's* celebrity car</div>
+        <div class="vcard-stats">
+          <div>⛽ <b>22 MPG</b> highway</div>
+          <div>📦 <b>~800 cans</b> capacity</div>
+          <div>🔧 14-gallon tank</div>
+        </div>
+      </div>
 
-      <section class="panel car-note">
-        <h2>Vehicle Flavor Text</h2>
-        <p id="carBlurb"></p>
-      </section>
-    </main>
+      <!-- USPS LLV MAIL TRUCK -->
+      <div class="vcard" data-car="mailtruck">
+        <div class="car-svg-wrap">
+          <svg viewBox="0 0 220 95" xmlns="http://www.w3.org/2000/svg">
+            <ellipse cx="110" cy="92" rx="82" ry="5" fill="rgba(0,0,0,0.15)"/>
+            <!-- Wheels -->
+            <circle cx="62" cy="76" r="16" fill="#1a1a1a"/><circle cx="62" cy="76" r="9" fill="#555"/><circle cx="62" cy="76" r="4" fill="#888"/><circle cx="62" cy="76" r="2" fill="#1a1a1a"/>
+            <circle cx="158" cy="76" r="16" fill="#1a1a1a"/><circle cx="158" cy="76" r="9" fill="#555"/><circle cx="158" cy="76" r="4" fill="#888"/><circle cx="158" cy="76" r="2" fill="#1a1a1a"/>
+            <!-- LLV body: very boxy rectangular aluminum cargo section -->
+            <rect x="42" y="27" width="132" height="52" fill="#ededea" stroke="#c0c0bc" stroke-width="1.5" rx="2"/>
+            <!-- Cab: right-side drive (US mail truck), attached to right/front -->
+            <rect x="152" y="20" width="34" height="35" fill="#e5e5e2" stroke="#c0c0bc" stroke-width="1.5" rx="3"/>
+            <!-- Cab window -->
+            <rect x="157" y="25" width="22" height="15" fill="#c0d8f0" stroke="#88aace" stroke-width="1" rx="2" opacity="0.92"/>
+            <!-- Windshield wiper -->
+            <line x1="158" y1="26" x2="170" y2="34" stroke="#666" stroke-width="1" opacity="0.5"/>
+            <!-- Cab lower panel / front face -->
+            <rect x="152" y="51" width="34" height="8" fill="#ddd" stroke="#bbb" stroke-width="0.8" rx="1"/>
+            <!-- Headlight -->
+            <rect x="176" y="53" width="10" height="5" rx="1" fill="#fff9b0" stroke="#c8c048" stroke-width="0.5"/>
+            <!-- USPS blue and red stripe along the full cargo body -->
+            <rect x="42" y="52" width="132" height="7" fill="#1a3a9a" opacity="0.88"/>
+            <rect x="42" y="59" width="132" height="5" fill="#c41230" opacity="0.88"/>
+            <!-- USPS label on cargo panel -->
+            <text x="108" y="44" font-family="Arial" font-weight="bold" font-size="8" fill="#2a2a2a" text-anchor="middle" letter-spacing="1">UNITED STATES</text>
+            <text x="108" y="53" font-family="Arial" font-weight="bold" font-size="6.5" fill="#1a3a9a" text-anchor="middle" letter-spacing="2">POSTAL SERVICE</text>
+            <!-- USPS eagle badge -->
+            <circle cx="144" cy="36" r="9" fill="#1a3a9a" stroke="#0a2a7a" stroke-width="1"/>
+            <text x="144" y="40" font-family="Arial" font-size="9" fill="white" text-anchor="middle">✉</text>
+            <!-- Cargo door outline (roll-up door seams) -->
+            <rect x="47" y="29" width="58" height="49" fill="none" stroke="#bbb" stroke-width="1" rx="1" stroke-dasharray="5,3"/>
+            <!-- Newman's note taped to side -->
+            <rect x="52" y="33" width="30" height="20" fill="rgba(255,255,220,0.9)" stroke="#c8c080" stroke-width="0.8" transform="rotate(-2,67,43)"/>
+            <text x="67" y="42" font-family="'Special Elite',cursive" font-size="5.5" fill="#3a3a1a" text-anchor="middle" transform="rotate(-2,67,43)">Saginaw</text>
+            <text x="67" y="49" font-family="'Special Elite',cursive" font-size="5" fill="#3a3a1a" text-anchor="middle" transform="rotate(-2,67,43)">route 📬</text>
+            <!-- Running board / step -->
+            <rect x="42" y="72" width="132" height="4" rx="1" fill="#d8d8d4" stroke="#b8b8b4" stroke-width="0.8"/>
+            <!-- Rear tail light -->
+            <rect x="40" y="35" width="5" height="11" rx="1" fill="#e02020" stroke="#b01010" stroke-width="0.5"/>
+            <rect x="40" y="50" width="5" height="9" rx="1" fill="#f5c518" stroke="#c8a000" stroke-width="0.5"/>
+          </svg>
+        </div>
+        <div class="vcard-name">USPS LLV Mail Truck</div>
+        <div class="vcard-owner">Newman's "workhorse"</div>
+        <div class="vcard-stats">
+          <div>⛽ <b>10 MPG</b> highway</div>
+          <div>📦 <b>~5,000 cans</b> capacity</div>
+          <div>🔧 31-gallon tank</div>
+        </div>
+      </div>
 
-    <script src="script.js"></script>
-  </body>
+    </div>
+  </div>
+
+  <!-- CONTROLS -->
+  <div class="paper controls-paper">
+    <div class="section-band" style="margin-left:28px;">Step 2 — Load Up &amp; Set Gas Price</div>
+    <div class="controls-inner">
+      <div class="controls-row">
+        <div>
+          <div class="ctrl-label">
+            <span>Cans you're hauling</span>
+            <span class="ctrl-val" id="cans-display">300</span>
+          </div>
+          <div class="can-vis" id="can-vis"></div>
+          <input type="range" id="cans-slider" min="1" max="600" value="300" step="5"/>
+          <div class="range-limits"><span>1 can</span><span id="max-lbl">600</span></div>
+          <div id="cap-warn" style="font-size:0.7rem;color:#c41230;font-family:'Courier Prime',monospace;margin-top:4px;min-height:14px;"></div>
+        </div>
+        <div>
+          <div class="ctrl-label">Gas price ($/gallon)</div>
+          <input class="gas-input" type="number" id="gas-price" value="3.50" min="0.50" max="12" step="0.01"/>
+          <div style="margin-top:16px;">
+            <div class="ctrl-label">Trip type</div>
+            <div class="trip-toggle">
+              <button class="trip-btn active" id="btn-one">One way<br><span style="font-size:0.68rem;opacity:0.7">Newman's route goes there anyway</span></button>
+              <button class="trip-btn" id="btn-rt">Round trip<br><span style="font-size:0.68rem;opacity:0.7">Driving yourself back</span></button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESULT -->
+  <div class="paper result-paper">
+    <div class="section-band" style="margin-left:28px;" id="result-band">Step 3 — The Verdict</div>
+    <div class="result-inner">
+
+      <div class="math-steps">
+        <div class="math-step">
+          <span class="math-label">Gas cost</span>
+          <span id="math-gas-eq" style="color:#1a1208">620 mi ÷ 26 MPG × $3.50/gal</span>
+          <span style="color:#7a6a4a">=</span>
+          <span class="mneg" id="math-gas-result">−$83.46</span>
+        </div>
+        <div class="math-step" style="margin-top:2px;">
+          <span class="math-label">Can revenue</span>
+          <span id="math-can-eq" style="color:#1a1208">300 cans × $0.05/can</span>
+          <span style="color:#7a6a4a">=</span>
+          <span class="mpos" id="math-can-result">+$15.00</span>
+        </div>
+        <hr class="math-divider"/>
+        <div class="math-step">
+          <span class="math-label" style="font-weight:700">Net</span>
+          <span id="math-net" class="mneg" style="font-size:1rem">−$68.46</span>
+        </div>
+      </div>
+
+      <div class="net-box loss" id="net-box">
+        <div>
+          <div class="net-num" id="net-num">−$68.46</div>
+          <div class="net-verdict" id="net-verdict">❌ Scheme implodes</div>
+        </div>
+        <div class="net-plain" id="net-plain">Need more cans.</div>
+      </div>
+
+      <div class="be-explain" id="be-explain">
+        To cover the gas you need <strong id="be-strong">1,669 cans</strong> just to break even. You have 300. You're <strong>1,369 cans short.</strong>
+      </div>
+      <div class="be-bar-labels">
+        <span>0</span>
+        <span>↑ break-even: <b id="be-cans-lbl">1,669</b></span>
+        <span id="be-max-lbl">2,504</span>
+      </div>
+      <div class="be-track">
+        <div class="be-fill lose" id="be-fill" style="width:18%"></div>
+        <div class="be-tick" id="be-tick" style="left:67%"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- REACTIONS -->
+  <div class="paper postits-paper">
+    <div class="section-band">What they're saying at Monk's Diner right now</div>
+    <div class="postits-grid">
+      <div class="postit py"><div class="postit-who">Kramer</div><div id="q-k">—</div></div>
+      <div class="postit pb"><div class="postit-who">Jerry</div><div id="q-j">—</div></div>
+      <div class="postit pp"><div class="postit-who">George</div><div id="q-g">—</div></div>
+      <div class="postit pg"><div class="postit-who">Newman</div><div id="q-n">—</div></div>
+    </div>
+  </div>
+
+  <!-- NOTES -->
+  <div class="paper notes-paper">
+    <div class="notes-head">📺 Context</div>
+    <p><strong>Why Michigan?</strong> Michigan's Bottle Bill (1976) returns 10¢ per can — the highest in the US. New York pays 5¢. Net gain per can: 5¢. Sounds easy. Then you pay for gas.</p>
+    <p><strong>Newman's secret edge:</strong> His USPS route already ran to Saginaw. The government paid his gas. His break-even was literally 0 cans — which is why Kramer called it "practically free money." He was right, but only about Newman's situation.</p>
+    <p><strong>Jon Voight's* LeBaron:</strong> S3 E2. Kramer buys it convinced celebrity provenance adds value. A bite mark later complicates things. (*Voight, not Voight.)</p>
+    <p><strong>The USPS LLV:</strong> Grumman-built Long Life Vehicle, aluminum body, ~10 MPG, right-hand drive. Built to last 24 years. Newman's ran entirely on resentment.</p>
+  </div>
+
+  <div class="footer">"No soup for you" if the math doesn't work out &nbsp;·&nbsp; Apt. 5B, 129 W. 81st St., NYC &nbsp;·&nbsp; circa 1996</div>
+
+</div>
+
+<script>
+const CARS = {
+  saab:      { mpg: 26, capacity: 600,  tank: 18, name: 'SAAB 900 Turbo' },
+  lebaron:   { mpg: 22, capacity: 800,  tank: 14, name: 'LeBaron Convertible' },
+  mailtruck: { mpg: 10, capacity: 5000, tank: 31, name: "Newman's LLV" },
+};
+const BASE_MI = 620, GAIN = 0.05;
+
+const Q = {
+  profit: {
+    k: ["GIDDYUP! We're gonna be rich, Jerry!", "The math doesn't lie. It NEVER lies.", "THIS is what I call a business opportunity!"],
+    j: ["Okay, I'll admit the numbers check out.", "I can't believe I'm saying this, but: nice work.", "You did the math right. For once."],
+    g: ["I hate that this is working. I genuinely hate it.", "Fine. FINE. You win this time, Kramer.", "Something will still go wrong. Mark my words."],
+    n: ["Hello... Jerry. 😏", "I knew this route would pay off eventually.", "The USPS has no idea what it has funded."],
+  },
+  loss: {
+    k: ["It's not about the money — it's the IDEA.", "We just need more cans. WAY more cans.", "This isn't over, Jerry. This is NOT over."],
+    j: ["You drove 620 miles for... that?", "I want you to really look at those numbers.", "This is exactly why I stay out of your schemes."],
+    g: ["I TOLD you. Did I not tell you? I told you.", "The bus trip alone would eat the profits.", "I once had a scheme like this. Lost $400."],
+    n: ["This changes nothing. The route was worth it.", "Newman... out.", "I'll be eating the loss. Like I eat everything."],
+  },
+  even: {
+    k: ["Break even? In this economy? I'll take it.", "Zero is a starting point. A foundation.", "Next run we bring more cans."],
+    j: ["So you drove to Michigan to make nothing.", "Congratulations on your net-zero, Kramer.", "You planned a round trip that nets zero dollars."],
+    g: ["Zero dollars. The George Costanza of outcomes.", "My whole life is break-even at best.", "I find this oddly, deeply comforting."],
+    n: ["We didn't lose. In my book that's a win.", "Hello, Jerry. 😐", "Strategic reconnaissance. That's all this was."],
+  },
+};
+
+function pick(a) { return a[Math.floor(Math.random() * a.length)]; }
+const $ = id => document.getElementById(id);
+
+let car = 'saab', roundTrip = false, lastOutcome = null;
+
+function fmt(n) {
+  const s = Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return (n < 0 ? '−$' : '+$') + s;
+}
+function commas(n) { return Math.round(n).toLocaleString('en-US'); }
+
+function updateCanVis(n) {
+  const MAX = 54, show = Math.min(n, MAX);
+  let html = '';
+  for (let i = 0; i < show; i++) html += '🥫';
+  if (n > MAX) html += `<span class="can-overflow">+${(n - MAX).toLocaleString()} more</span>`;
+  $('can-vis').innerHTML = html;
+}
+
+function calc() {
+  const c = CARS[car];
+  const cans = parseInt($('cans-slider').value, 10);
+  const gasPrice = parseFloat($('gas-price').value) || 3.50;
+  const miles = BASE_MI * (roundTrip ? 2 : 1);
+  const gallons = miles / c.mpg;
+  const gasCost = gallons * gasPrice;
+  const revenue = cans * GAIN;
+  const net = revenue - gasCost;
+  const beNum = gasCost / GAIN;
+  const outcome = Math.abs(net) < 0.005 ? 'even' : net > 0 ? 'profit' : 'loss';
+
+  $('cans-display').textContent = commas(cans);
+  updateCanVis(cans);
+  $('cap-warn').textContent = cans >= c.capacity ? `⚠ At ${c.name} max capacity` : '';
+
+  $('math-gas-eq').textContent = `${commas(miles)} mi ÷ ${c.mpg} MPG × $${gasPrice.toFixed(2)}/gal`;
+  $('math-gas-result').textContent = '−$' + gasCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  $('math-can-eq').textContent = `${commas(cans)} cans × $0.05/can`;
+  $('math-can-result').textContent = '+$' + revenue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  $('math-net').textContent = fmt(net);
+  $('math-net').className = net >= 0 ? 'mpos' : 'mneg';
+
+  $('net-num').textContent = fmt(net);
+  const nb = $('net-box');
+  nb.className = 'net-box ' + (outcome === 'profit' ? 'profit' : outcome === 'loss' ? 'loss' : 'even');
+
+  if (outcome === 'profit') {
+    $('net-verdict').textContent = '✅ PROFITABLE — GIDDYUP!';
+    $('net-plain').textContent = `${commas(cans - Math.ceil(beNum))} cans past break-even. Real money.`;
+    $('result-band').style.background = '#1a6a1a';
+  } else if (outcome === 'loss') {
+    $('net-verdict').textContent = '❌ Scheme implodes';
+    $('net-plain').textContent = `Load ${commas(Math.ceil(beNum - cans))} more cans and try again.`;
+    $('result-band').style.background = '#c41230';
+  } else {
+    $('net-verdict').textContent = '➖ Dead even — a Costanza outcome';
+    $('net-plain').textContent = 'Not a cent made, not a cent lost.';
+    $('result-band').style.background = '#1e3a5f';
+  }
+
+  const beEl = $('be-explain');
+  if (outcome === 'profit') {
+    beEl.className = 'be-explain ok';
+    beEl.innerHTML = `You needed <strong>${commas(Math.round(beNum))} cans</strong> to cover gas. You have ${commas(cans)} — that's <strong>${commas(cans - Math.ceil(beNum))} cans of pure profit</strong>.`;
+  } else if (outcome === 'loss') {
+    beEl.className = 'be-explain';
+    beEl.innerHTML = `To cover gas alone you need <strong>${commas(Math.round(beNum))} cans</strong>. You have ${commas(cans)} — still <strong>${commas(Math.ceil(beNum) - cans)} cans short of breaking even</strong>.`;
+  } else {
+    beEl.className = 'be-explain';
+    beEl.innerHTML = `Exactly at break-even with <strong>${commas(cans)} cans</strong>. Not one cent of profit.`;
+  }
+
+  const barMax = Math.max(beNum * 1.5, cans * 1.1, 200);
+  $('be-fill').style.width = Math.min((cans / barMax) * 100, 100) + '%';
+  $('be-fill').className = 'be-fill ' + (net >= 0 ? 'win' : 'lose');
+  $('be-tick').style.left = Math.min((beNum / barMax) * 100, 100) + '%';
+  $('be-cans-lbl').textContent = commas(Math.round(beNum));
+  $('be-max-lbl').textContent = commas(Math.round(barMax)) + ' cans';
+
+  if (outcome !== lastOutcome) {
+    const s = Q[outcome];
+    $('q-k').textContent = pick(s.k); $('q-j').textContent = pick(s.j);
+    $('q-g').textContent = pick(s.g); $('q-n').textContent = pick(s.n);
+    lastOutcome = outcome;
+  }
+
+  let msg = outcome === 'profit'
+    ? `★ PROFITABLE ★ Net: ${fmt(net)} ★ ${commas(miles)} miles ★ ${commas(cans)} cans ★ ${commas(cans - Math.ceil(beNum))} over break-even ★ GIDDYUP! ★`
+    : `★ SCHEME ALERT ★ ${fmt(net)} in the red ★ Need ${commas(Math.ceil(beNum - cans))} more cans ★ ${commas(miles)} miles to Saginaw ★ "It's not over, Jerry." ★`;
+  msg = msg + '  ' + msg;
+  const ti = $('ticker');
+  if (ti.textContent !== msg) { ti.textContent = msg; ti.style.animation = 'none'; ti.offsetHeight; ti.style.animation = ''; }
+}
+
+$('cars-grid').addEventListener('click', e => {
+  const card = e.target.closest('.vcard');
+  if (!card) return;
+  document.querySelectorAll('.vcard').forEach(c => c.classList.remove('selected'));
+  card.classList.add('selected');
+  car = card.dataset.car;
+  const c = CARS[car], s = $('cans-slider');
+  s.max = c.capacity;
+  $('max-lbl').textContent = commas(c.capacity);
+  s.value = Math.min(parseInt(s.value), c.capacity);
+  if (parseInt(s.value) < 10) s.value = { saab: 300, lebaron: 400, mailtruck: 2000 }[car];
+  lastOutcome = null; calc();
+});
+
+$('cans-slider').addEventListener('input', calc);
+$('gas-price').addEventListener('input', calc);
+$('btn-one').addEventListener('click', () => { roundTrip = false; $('btn-one').classList.add('active'); $('btn-rt').classList.remove('active'); calc(); });
+$('btn-rt').addEventListener('click', () => { roundTrip = true; $('btn-rt').classList.add('active'); $('btn-one').classList.remove('active'); calc(); });
+
+$('cans-slider').max = CARS[car].capacity;
+$('max-lbl').textContent = commas(CARS[car].capacity);
+$('cans-slider').value = 300;
+calc();
+</script>
+</body>
 </html>
